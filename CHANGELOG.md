@@ -4,6 +4,11 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+- npm is out of scope: both READMEs describe GitHub as the only installation and
+  release channel; the npm-name caveat and the publishing instructions are gone.
+
 ## 2.0.0 — 2026-10-25
 
 First public version.

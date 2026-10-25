@@ -43,11 +43,6 @@ dsh plugin --profile web add /path/to/dsh-web-search-searxng
 `install_bundle` с каталогом пакета в качестве `target`. После этого спросите
 агента о чём-нибудь актуальном: `web_search` отвечает через ваш инстанс.
 
-> Имя `dsh-web-search-searxng` в npm занято **другим** плагином для SearXNG
-> (0.5.1), поэтому не устанавливайте из npm по этому имени — используйте
-> спецификацию GitHub выше. Для публикации в npm этому пакету нужен scope (см.
-> [Публикация](#публикация)).
-
 **Первый запуск медленный — один раз.** Плагин загружает образ, создаёт контейнер и ждёт
 `/healthz` (до `startupTimeoutMs`, по умолчанию 90 с). Пока инстанс не готов,
 поиск завершается ошибкой «SearXNG instance is not ready: …»; загрузка при этом
@@ -168,19 +163,20 @@ CI гоняет юнит-набор на Node 22 и 24 на каждый push
 (`.github/workflows/ci.yml`); проверка с контейнером — ручная
 (`.github/workflows/docker-smoke.yml`).
 
-### Публикация
+### Релиз
+
+Репозиторий и есть канал распространения: шага «публикация в реестр» нет.
+
+1. Поднимите `version` в `package.json` и добавьте запись в `CHANGELOG.md`.
+2. Закоммитьте, поставьте тег `v<version>` и запушьте тег.
+3. Создайте GitHub-релиз на этот тег (`gh release create v<version>` или через веб-интерфейс).
+
+Ставят — и закрепляют версию — прямо из GitHub:
 
 ```bash
-npm pack --dry-run      # в тарбол должны попасть index.js, src/, locale/, icon.svg, патч, LICENSE, README
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.0
 ```
-
-Имя `dsh-web-search-searxng` в npm уже занято другим пакетом, поэтому для релиза в
-реестр нужен scope, например `@you/dsh-web-search-searxng`. Переименовывать надо
-и пакет, **и** поле `name:` строки бандла в `cordis.patch.yml` — вместе, затем
-`npm publish --access public`. Для установки из GitHub ничего из этого не нужно.
-
-Для каждого опубликованного изменения поднимайте `version` и добавляйте запись в
-`CHANGELOG.md`.
 
 Чтобы плагин находили в списках сообщества, публикуйте репозиторий с темой
 `dsh-plugin` на GitHub.

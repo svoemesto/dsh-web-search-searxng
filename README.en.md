@@ -43,11 +43,6 @@ Inside a running harness the same install is `plugin_manager` →
 `install_bundle` with the package directory as `target`. Then ask the agent
 something current: `web_search` answers through your instance.
 
-> The npm name `dsh-web-search-searxng` belongs to an **unrelated** SearXNG
-> plugin (0.5.1), so do not install from npm by that name — use the GitHub spec
-> above. Publishing this package to npm requires a scope (see
-> [Publishing](#publishing)).
-
 **First run is slow, once.** The plugin pulls the image, creates the container,
 and waits for `/healthz` (up to `startupTimeoutMs`, 90 s by default). Until it is
 healthy a search fails with "SearXNG instance is not ready: …"; the pull keeps
@@ -167,18 +162,20 @@ CI runs the unit suite on Node 22 and 24 for every push
 (`.github/workflows/ci.yml`); the container smoke test is manual
 (`.github/workflows/docker-smoke.yml`).
 
-### Publishing
+### Releasing
+
+The repository is the distribution channel; there is no registry step.
+
+1. Bump `version` in `package.json` and add a `CHANGELOG.md` entry.
+2. Commit, tag `v<version>`, push the tag.
+3. Create a GitHub release for that tag (`gh release create v<version>` or the UI).
+
+Users install — and pin a version — straight from GitHub:
 
 ```bash
-npm pack --dry-run      # the tarball must contain index.js, src/, locale/, icon.svg, patch, LICENSE, README
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.0
 ```
-
-The npm name `dsh-web-search-searxng` is already taken by an unrelated package,
-so a registry release needs a scope, e.g. `@you/dsh-web-search-searxng`. Rename
-the package **and** the bundle row's `name:` in `cordis.patch.yml` together, then
-`npm publish --access public`. GitHub installation needs none of this.
-
-Bump `version` and add a `CHANGELOG.md` entry for every published change.
 
 To make it discoverable from the community plugin lists, publish the repository
 with the `dsh-plugin` GitHub topic.
