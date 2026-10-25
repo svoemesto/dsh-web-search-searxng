@@ -59,6 +59,8 @@ dependencies or build step.
 | Docker daemon reachable by the user running `dsh` (`docker version`) | the plugin runs and stops the container itself |
 | ~400 MB disk, network for the first run | one-time image pull |
 | Node 22+ (the harness already requires it) | `fetch`, `AbortSignal.timeout` |
+| A DSH build with the `ctx.web` seam (current 0.2.x) | the provider registers into it; on older builds the row just waits for the service and does nothing |
+| `pnpm` and `git` on the `dsh` command's PATH | `dsh plugin` installs through pnpm, and the `github:` spec needs git |
 
 No Docker? Set `baseURL` to an existing SearXNG instance instead — then nothing
 is started (see [Reuse an existing instance](#reuse-an-existing-instance)).
@@ -96,6 +98,22 @@ going in the background, so the next search succeeds.
 The container starts when the plugin activates and is stopped when it unloads
 (harness shutdown, HMR reload, uninstall). It is kept, not removed, so the next
 start takes seconds; data and the secret stay in `$DSH_HOME/searxng`.
+
+## What it changes in your profile
+
+Two patch rows, both visible in `dsh --profile <name> --dump-config`:
+
+- the `web-search-searxng` row — the provider itself (`port: 8888` by default);
+- an override of the `web` row: `searchProvider: searxng` and
+  `fetchProvider: http`. A patch replaces `config` wholesale, so `fetchProvider`
+  is stated explicitly — without it `web_fetch` would be left without a provider
+  after installation. A settings override saved earlier in Settings → Plugins →
+  Web search outranks the patch: search stays on DeepSeek although the plugin is
+  installed.
+
+A container named `dsh-searxng` that this plugin did **not** create is neither
+adopted nor stopped: the plugin checks the `dsh.plugin=dsh-web-search-searxng`
+label and refuses with an actionable message (set a different `containerName`).
 
 ## Configuration
 
@@ -193,6 +211,7 @@ a failure never hides a later successful search.
 | `no free port in 8888..8937` | Lower `port` or free a port; each container takes one. |
 | Search returns odd/sparse results | SearXNG aggregates third-party engines; `docker logs` shows which ones refused (`unresponsive_engines`). |
 | Two harnesses on one machine | They share the same container name/port; the second reuses the running container. Give one a distinct `containerName` + `port` if you want isolation. |
+| `container "dsh-searxng" exists but was not created by this plugin` | A container with that name already exists without our label. Set another `containerName`, or remove that container. |
 | Uninstall | Removing the bundle stops the container; delete `docker rm -f dsh-searxng` and `$DSH_HOME/searxng` to reclaim disk. |
 
 ## Security notes

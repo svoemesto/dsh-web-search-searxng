@@ -143,7 +143,7 @@ export class SearxngContainer {
 
   /**
    * Read the container's state without starting anything.
-   * @returns {Promise<{exists: boolean, running: boolean, port?: number}>} the state.
+   * @returns {Promise<{exists: boolean, running: boolean, managed?: boolean, port?: number}>} the state; `managed` reports our ownership label.
    */
   async inspect() {
     let stdout
@@ -157,7 +157,8 @@ export class SearxngContainer {
     const [record] = JSON.parse(stdout)
     const binding = record?.NetworkSettings?.Ports?.[`${CONTAINER_PORT}/tcp`]?.[0]
     const hostPort = binding?.HostPort === undefined ? undefined : Number(binding.HostPort)
-    return { exists: true, running: record?.State?.Running === true, ...hostPort === undefined ? {} : { port: hostPort } }
+    const managed = record?.Config?.Labels?.['dsh.plugin'] === 'dsh-web-search-searxng'
+    return { exists: true, running: record?.State?.Running === true, managed, ...hostPort === undefined ? {} : { port: hostPort } }
   }
 
   /** @returns {Promise<boolean>} whether the image is already local. */
@@ -176,6 +177,11 @@ export class SearxngContainer {
    */
   async ensure() {
     const state = await this.inspect()
+    // Adopting a foreign container by name would mean starting and later
+    // stopping someone else's workload: refuse and name the way out instead.
+    if (state.exists && state.managed !== true) {
+      throw new Error(`web-search-searxng: container "${this.name}" exists but was not created by this plugin (no ${CONTAINER_LABEL} label) — set a different containerName in config, or remove that container`)
+    }
     if (state.running) {
       const port = state.port ?? this.port
       const baseURL = `http://127.0.0.1:${port}/`
@@ -224,7 +230,9 @@ export class SearxngContainer {
    */
   async stop() {
     const state = await this.inspect().catch(() => undefined)
-    if (state?.running !== true) return
+    // Only ever stop a container this plugin created: a name collision must not
+    // turn plugin unload into someone else's outage.
+    if (state?.running !== true || state.managed !== true) return
     try {
       await this.run(['stop', '-t', '5', this.name])
       this.log('info', `searxng: stopped container ${this.name}`)

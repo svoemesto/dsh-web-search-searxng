@@ -4,6 +4,19 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.1.2 — 2026-10-25
+
+- Safety: a container named `dsh-searxng` that this plugin did not create is no
+  longer adopted, and no longer stopped on unload. The ownership label
+  `dsh.plugin=dsh-web-search-searxng` is required, and the failure names the way
+  out (another `containerName` or remove that container).
+- README (both languages): requirements now name a DSH build with the `ctx.web`
+  seam plus `pnpm` and `git`; a new "What it changes in your profile" section
+  explains the two patch rows and the settings override; troubleshooting covers
+  the container-name conflict.
+- 32 unit tests: one new case proves a foreign container is neither adopted nor
+  stopped.
+
 ## 2.1.1 — 2026-10-25
 
 - README (both languages) explains what "engines" means: the enabled set of the

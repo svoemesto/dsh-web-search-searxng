@@ -197,19 +197,19 @@ test('container: creates, pulls, publishes on the free port, reports the endpoin
 })
 
 test('container: reuses a running container and starts a stopped one', async () => {
-  const running = JSON.stringify([{ State: { Running: true }, NetworkSettings: { Ports: { '8080/tcp': [{ HostPort: '8893' }] } } }])
+  const running = JSON.stringify([{ State: { Running: true }, Config: { Labels: { 'dsh.plugin': 'dsh-web-search-searxng' } }, NetworkSettings: { Ports: { '8080/tcp': [{ HostPort: '8893' }] } } }])
   const reused = bench({ inspect: async () => running })
   assert.deepEqual(await reused.container.ensure(), { baseURL: 'http://127.0.0.1:8893/', port: 8893, started: false })
   assert.deepEqual(reused.calls.map(args => args[0]), ['inspect'])
 
-  const stopped = JSON.stringify([{ State: { Running: false }, NetworkSettings: { Ports: { '8080/tcp': [{ HostPort: '8894' }] } } }])
+  const stopped = JSON.stringify([{ State: { Running: false }, Config: { Labels: { 'dsh.plugin': 'dsh-web-search-searxng' } }, NetworkSettings: { Ports: { '8080/tcp': [{ HostPort: '8894' }] } } }])
   const started = bench({ inspect: async () => stopped })
   assert.deepEqual(await started.container.ensure(), { baseURL: 'http://127.0.0.1:8894/', port: 8894, started: true })
   assert.deepEqual(started.calls.map(args => args[0]), ['inspect', 'start'])
 })
 
 test('container: stop only stops a running container', async () => {
-  const running = JSON.stringify([{ State: { Running: true }, NetworkSettings: {} }])
+  const running = JSON.stringify([{ State: { Running: true }, Config: { Labels: { 'dsh.plugin': 'dsh-web-search-searxng' } }, NetworkSettings: {} }])
   const live = bench({ inspect: async () => running })
   await live.container.stop()
   assert.deepEqual(live.calls.map(args => args[0]), ['inspect', 'stop'])
@@ -219,9 +219,17 @@ test('container: stop only stops a running container', async () => {
   assert.deepEqual(absent.calls.map(args => args[0]), ['inspect'])
 })
 
+test('container: a foreign container with our name is neither adopted nor stopped', async () => {
+  const foreign = JSON.stringify([{ State: { Running: true }, Config: { Labels: {} }, NetworkSettings: { Ports: { '8080/tcp': [{ HostPort: '8895' }] } } }])
+  const { container, calls } = bench({ inspect: async () => foreign })
+  await assert.rejects(() => container.ensure(), /exists but was not created by this plugin/)
+  await container.stop()
+  assert.deepEqual(calls.map(args => args[0]), ['inspect', 'inspect'], 'only inspections: no start, no stop')
+})
+
 test('container: inspect tolerates a missing port binding', async () => {
   const { container } = bench({ inspect: async () => JSON.stringify([{ State: { Running: true }, NetworkSettings: { Ports: {} } }]) })
-  assert.deepEqual(await container.inspect(), { exists: true, running: true })
+  assert.deepEqual(await container.inspect(), { exists: true, running: true, managed: false })
 })
 
 // ── provider ─────────────────────────────────────────────────────────────────
