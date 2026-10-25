@@ -1,96 +1,97 @@
 # dsh-web-search-searxng
 
 [![ci](https://github.com/svoemesto/dsh-web-search-searxng/actions/workflows/ci.yml/badge.svg)](https://github.com/svoemesto/dsh-web-search-searxng/actions/workflows/ci.yml)
-**English** | [Русский](README.ru.md)
+**Русский** | [English](README.en.md)
 
-A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) bundle that
-gives the agent a working `web_search` without a vendor API key. It plugs a
-SearXNG-backed `WebSearchProvider` into the harness web seam (`ctx.web`) and, by
-default, **brings up its own SearXNG container** — so installing the bundle is
-the whole setup.
+Бандл для [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness),
+который даёт агенту работающий `web_search` без ключа вендора. Он подключает
+провайдера поиска на базе SearXNG к шву веб-доступа харнесса (`ctx.web`) и по
+умолчанию **поднимает собственный контейнер SearXNG** — то есть установка бандла
+и есть вся настройка.
 
-- Plain ESM, no dependencies, no build step.
-- Own container (`searxng/searxng` image) on a free loopback port, generated
-  settings, health wait, stop on unload — or point it at an instance you
-  already run with one config field.
-- No key, no per-search cost, no third-party API in the loop.
-- Provider id `searxng`; the model-facing `web_search` tool is the stock one.
+- Обычный ESM, без зависимостей и без сборки.
+- Свой контейнер (образ `searxng/searxng`) на свободном локальном порту,
+  сгенерированные настройки, ожидание готовности, остановка при выгрузке — либо
+  один параметр конфига, чтобы использовать уже работающий инстанс.
+- Без ключей, без оплаты за поиск, без стороннего API в цепочке.
+- id провайдера — `searxng`; инструмент `web_search` остаётся штатным.
 
-## Requirements
+## Требования
 
-| Requirement | Why |
+| Требование | Зачем |
 |---|---|
-| Docker daemon reachable by the user running `dsh` (`docker version`) | the plugin runs and stops the container itself |
-| ~400 MB disk, network for the first run | one-time image pull |
-| Node 22+ (the harness already requires it) | `fetch`, `AbortSignal.timeout` |
+| Демон Docker, доступный пользователю, который запускает `dsh` (`docker version`) | плагин сам запускает и останавливает контейнер |
+| ~400 МБ диска и сеть при первом запуске | однократная загрузка образа |
+| Node 22+ (харнесс и так его требует) | `fetch`, `AbortSignal.timeout` |
 
-No Docker? Set `baseURL` to an existing SearXNG instance instead — then nothing
-is started (see [Reuse an existing instance](#reuse-an-existing-instance)).
+Нет Docker? Укажите `baseURL` на существующий инстанс SearXNG — тогда ничего не
+запускается (см. [Использовать существующий инстанс](#использовать-существующий-инстанс)).
 
-## Install
+## Установка
 
-The package declares `dsh.bundle`, so installing it also activates it:
+Пакет объявляет `dsh.bundle`, поэтому установка одновременно и активирует его:
 
 ```bash
-# from GitHub (the supported channel)
+# из GitHub (поддерживаемый способ)
 dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
 
-# from a local checkout (development)
+# из локальной копии (для разработки)
 dsh plugin --profile web add /path/to/dsh-web-search-searxng
 ```
 
-Inside a running harness the same install is `plugin_manager` →
-`install_bundle` with the package directory as `target`. Then ask the agent
-something current: `web_search` answers through your instance.
+Внутри уже запущенного харнесса то же самое делает `plugin_manager` →
+`install_bundle` с каталогом пакета в качестве `target`. После этого спросите
+агента о чём-нибудь актуальном: `web_search` отвечает через ваш инстанс.
 
-> The npm name `dsh-web-search-searxng` belongs to an **unrelated** SearXNG
-> plugin (0.5.1), so do not install from npm by that name — use the GitHub spec
-> above. Publishing this package to npm requires a scope (see
-> [Publishing](#publishing)).
+> Имя `dsh-web-search-searxng` в npm занято **другим** плагином для SearXNG
+> (0.5.1), поэтому не устанавливайте из npm по этому имени — используйте
+> спецификацию GitHub выше. Для публикации в npm этому пакету нужен scope (см.
+> [Публикация](#публикация)).
 
-**First run is slow, once.** The plugin pulls the image, creates the container,
-and waits for `/healthz` (up to `startupTimeoutMs`, 90 s by default). Until it is
-healthy a search fails with "SearXNG instance is not ready: …"; the pull keeps
-going in the background, so the next search succeeds.
+**Первый запуск медленный — один раз.** Плагин загружает образ, создаёт контейнер и ждёт
+`/healthz` (до `startupTimeoutMs`, по умолчанию 90 с). Пока инстанс не готов,
+поиск завершается ошибкой «SearXNG instance is not ready: …»; загрузка при этом
+продолжается в фоне, и следующий поиск уже проходит.
 
-## What it creates
+## Что создаётся
 
-| Thing | Where |
+| Что | Где |
 |---|---|
-| Container | `dsh-searxng` (configurable), `--restart unless-stopped`, bound to `127.0.0.1:<free port>:8080` |
-| Settings | `$DSH_HOME/searxng/settings.yml` (default `~/.dsh/searxng/`), written once, never rewritten |
-| Secret | generated into those settings; stable across restarts and upgrades |
-| Port | first free port at or above `port` (8888), scanned up to 50 ports — a machine already running SearXNG keeps working |
+| Контейнер | `dsh-searxng` (имя настраивается), `--restart unless-stopped`, публикация только на `127.0.0.1:<свободный порт>:8080` |
+| Настройки | `$DSH_HOME/searxng/settings.yml` (по умолчанию `~/.dsh/searxng/`), пишутся один раз и никогда не перезаписываются |
+| Секрет | генерируется в эти настройки; сохраняется между перезапусками и обновлениями |
+| Порт | первый свободный порт начиная с `port` (8888), просматривается до 50 портов — машина, где SearXNG уже занят, продолжает работать |
 
-The container starts when the plugin activates and is stopped when it unloads
-(harness shutdown, HMR reload, uninstall). It is kept, not removed, so the next
-start takes seconds; data and the secret stay in `$DSH_HOME/searxng`.
+Контейнер запускается при активации плагина и останавливается при его выгрузке
+(завершение харнесса, HMR-перезагрузка, удаление плагина). Сам контейнер
+сохраняется, поэтому следующий старт занимает секунды; данные и секрет остаются
+в `$DSH_HOME/searxng`.
 
-## Configuration
+## Настройка
 
-Every field is optional; all have working defaults.
+Все поля необязательны, у всех есть рабочие значения по умолчанию.
 
-| Field | Default | Meaning |
+| Поле | По умолчанию | Смысл |
 |---|---|---|
-| `baseURL` | (unset) | Use this existing instance and start nothing. Unset → own container. |
-| `port` | `8888` | First candidate port for the container; busy ports are skipped. |
-| `image` | `searxng/searxng:latest` | Any compatible SearXNG image (mirror, pinned tag). |
-| `containerName` | `dsh-searxng` | Container this plugin owns. |
-| `dataDir` | `$DSH_HOME/searxng` | Host directory holding `settings.yml`. |
-| `instanceName` | `DSH web search` | Label in the instance's own UI. |
-| `startupTimeoutMs` | `90000` | Health-wait budget (1000–600000). |
-| `timeoutMs` | `20000` | Per-search budget. |
-| `language` | (unset) | Sent as `language`; unset = instance default. |
-| `categories` | (unset) | `general`, `news`, … |
-| `safesearch` | (unset) | `0`, `1`, `2`. |
-| `timeRange` | (unset) | `day`, `week`, `month`, `year`. |
-| `numResults` | (unset) | Trim only when a caller passes no `maxResults`; the seam owns the real bound. |
-| `apiKey` | (unset) | Sent as `preference[api_key]` for instances behind a key. |
+| `baseURL` | (не задано) | Использовать этот существующий инстанс и ничего не запускать. Не задано → свой контейнер. |
+| `port` | `8888` | Первый порт-кандидат для контейнера; занятые пропускаются. |
+| `image` | `searxng/searxng:latest` | Любой совместимый образ SearXNG (зеркало, закреплённый тег). |
+| `containerName` | `dsh-searxng` | Контейнер, которым владеет плагин. |
+| `dataDir` | `$DSH_HOME/searxng` | Каталог на хосте с `settings.yml`. |
+| `instanceName` | `DSH web search` | Подпись в собственном интерфейсе инстанса. |
+| `startupTimeoutMs` | `90000` | Бюджет ожидания готовности (1000–600000). |
+| `timeoutMs` | `20000` | Бюджет одного поиска. |
+| `language` | (не задано) | Передаётся как `language`; не задано = значение инстанса. |
+| `categories` | (не задано) | `general`, `news`, … |
+| `safesearch` | (не задано) | `0`, `1`, `2`. |
+| `timeRange` | (не задано) | `day`, `week`, `month`, `year`. |
+| `numResults` | (не задано) | Обрезка только когда вызывающий не передал `maxResults`; реальную границу держит шов. |
+| `apiKey` | (не задано) | Передаётся как `preference[api_key]` для инстансов за ключом. |
 
-Invalid values stop activation with a message naming the field — a typo never
-degrades into a silently disabled search.
+Неверные значения останавливают активацию с сообщением, называющим поле —
+опечатка никогда не превращается в молча неработающий поиск.
 
-Example row (in a bundle patch or profile patch):
+Пример строки (в патче бандла или профиля):
 
 ```yaml
 - insert:
@@ -101,88 +102,89 @@ Example row (in a bundle patch or profile patch):
         language: ru
 ```
 
-### Reuse an existing instance
+### Использовать существующий инстанс
 
 ```yaml
 config:
   baseURL: http://127.0.0.1:8888
 ```
 
-Then no container is created, and no Docker is needed. Useful when the machine
-already runs SearXNG for something else, or the instance lives on another host.
+Тогда контейнер не создаётся и Docker не нужен. Полезно, когда на машине уже
+работает SearXNG для других задач или инстанс живёт на другом хосте.
 
-## Result mapping
+## Как отображаются результаты
 
-- `results[]` → `{url, title?, snippet?, publishedAt?}`; entries without an
-  absolute http(s) URL are dropped, blank snippets omitted (never invented),
-  snippets capped at 800 characters;
-- the first non-blank engine answer (`answers[]`) becomes `content` — real engine
-  output, not prose composed here;
-- no results **and** a non-empty `unresponsive_engines` list → `WEB_PROVIDER_ERROR`
-  naming the engines, so a half-broken instance is visible instead of looking
-  like a legitimate empty answer.
+- `results[]` → `{url, title?, snippet?, publishedAt?}`; записи без абсолютного
+  http(s)-URL отбрасываются, пустые сниппеты опускаются (не выдумываются),
+  сниппеты ограничены 800 символами;
+- первый непустой ответ движка (`answers[]`) становится `content` — это реальный
+  вывод движка, а не текст, сочинённый здесь;
+- нет результатов **и** непустой список `unresponsive_engines` → `WEB_PROVIDER_ERROR`
+  с именами движков, чтобы «полусломанный» инстанс был виден, а не выглядел как
+  честный пустой ответ.
 
-Failures carry the seam's codes: `WEB_PROVIDER_ERROR` (HTTP error, unparseable
-body, timeout, network, not ready) and `WEB_ABORTED` (caller cancellation).
+Ошибки несут коды шва: `WEB_PROVIDER_ERROR` (HTTP-ошибка, неразбираемое тело,
+таймаут, сеть, неготовность) и `WEB_ABORTED` (отмена вызывающим).
 
-## Troubleshooting
+## Диагностика
 
-| Symptom | Cause and fix |
+| Симптом | Причина и что делать |
 |---|---|
-| `docker is not available on this machine` | Start Docker, or set `baseURL`. |
-| `SearXNG instance is not ready: … did not become healthy` | Check `docker logs dsh-searxng`; the first pull may still be running. |
-| `no free port in 8888..8937` | Lower `port` or free a port; each container takes one. |
-| Search returns odd/sparse results | SearXNG aggregates third-party engines; `docker logs` shows which ones refused (`unresponsive_engines`). |
-| Two harnesses on one machine | They share the same container name/port; the second reuses the running container. Give one a distinct `containerName` + `port` if you want isolation. |
-| Uninstall | Removing the bundle stops the container; delete `docker rm -f dsh-searxng` and `$DSH_HOME/searxng` to reclaim disk. |
+| `docker is not available on this machine` | Запустите Docker или задайте `baseURL`. |
+| `SearXNG instance is not ready: … did not become healthy` | Смотрите `docker logs dsh-searxng`; возможно, ещё идёт первая загрузка образа. |
+| `no free port in 8888..8937` | Уменьшите `port` или освободите порт; каждый контейнер занимает один. |
+| Поиск даёт странные или скудные результаты | SearXNG агрегирует сторонние движки; `docker logs` показывает, какие отказали (`unresponsive_engines`). |
+| Два харнесса на одной машине | Они делят имя контейнера и порт; второй переиспользует запущенный. Для изоляции задайте разные `containerName` + `port`. |
+| Удаление | Снятие бандла останавливает контейнер; чтобы вернуть диск — `docker rm -f dsh-searxng` и удалить `$DSH_HOME/searxng`. |
 
-## Security notes
+## Безопасность
 
-- The container publishes only on `127.0.0.1`; it is not reachable from the LAN.
-- JSON output is enabled and the rate limiter is off — safe only because of the
-  loopback bind. If you expose the instance, re-enable the limiter in
-  `settings.yml` and put it behind a proxy.
-- The secret key is generated locally and lives only in `settings.yml`.
+- Контейнер публикуется только на `127.0.0.1`; из локальной сети он недоступен.
+- JSON-вывод включён, а ограничитель частоты выключен — это безопасно только
+  благодаря привязке к loopback. Если открываете инстанс наружу, включите
+  ограничитель в `settings.yml` и поставьте его за прокси.
+- Секретный ключ генерируется локально и хранится только в `settings.yml`.
 
-## Development
+## Разработка
 
-No dependencies, no build step: the sources are the artifact.
+Зависимостей и сборки нет: исходники и есть артефакт.
 
 ```
-index.js              plugin entry (apply, lifecycle, mode selection)
-src/config.js         validation and defaults
-src/container.js      docker lifecycle: inspect / start / pull+create / health / stop
-src/settings.js       settings.yml generation (+ one-time secret)
-src/provider.js       SearXNG JSON client and result mapping
-test/unit.test.mjs    unit suite (fake docker, no network)
-test/docker.smoke.mjs live container: ensure → search → stop → rm
+index.js              точка входа плагина (apply, жизненный цикл, выбор режима)
+src/config.js         валидация и значения по умолчанию
+src/container.js      жизненный цикл docker: inspect / start / pull+create / health / stop
+src/settings.js       генерация settings.yml (+ одноразовый секрет)
+src/provider.js       клиент JSON-API SearXNG и маппинг результатов
+test/unit.test.mjs    юнит-набор (фейковый docker, без сети)
+test/docker.smoke.mjs живой контейнер: ensure → search → stop → rm
 ```
 
 ```bash
-node --test test/unit.test.mjs   # config, settings, container lifecycle, mapping, errors
-node test/docker.smoke.mjs       # real container; needs Docker + network, starts dsh-searxng-smoke
+node --test test/unit.test.mjs   # конфиг, настройки, жизненный цикл контейнера, маппинг, ошибки
+node test/docker.smoke.mjs       # настоящий контейнер; нужны Docker и сеть, поднимает dsh-searxng-smoke
 ```
 
-CI runs the unit suite on Node 22 and 24 for every push
-(`.github/workflows/ci.yml`); the container smoke test is manual
+CI гоняет юнит-набор на Node 22 и 24 на каждый push
+(`.github/workflows/ci.yml`); проверка с контейнером — ручная
 (`.github/workflows/docker-smoke.yml`).
 
-### Publishing
+### Публикация
 
 ```bash
-npm pack --dry-run      # the tarball must contain index.js, src/, locale/, icon.svg, patch, LICENSE, README
+npm pack --dry-run      # в тарбол должны попасть index.js, src/, locale/, icon.svg, патч, LICENSE, README
 ```
 
-The npm name `dsh-web-search-searxng` is already taken by an unrelated package,
-so a registry release needs a scope, e.g. `@you/dsh-web-search-searxng`. Rename
-the package **and** the bundle row's `name:` in `cordis.patch.yml` together, then
-`npm publish --access public`. GitHub installation needs none of this.
+Имя `dsh-web-search-searxng` в npm уже занято другим пакетом, поэтому для релиза в
+реестр нужен scope, например `@you/dsh-web-search-searxng`. Переименовывать надо
+и пакет, **и** поле `name:` строки бандла в `cordis.patch.yml` — вместе, затем
+`npm publish --access public`. Для установки из GitHub ничего из этого не нужно.
 
-Bump `version` and add a `CHANGELOG.md` entry for every published change.
+Для каждого опубликованного изменения поднимайте `version` и добавляйте запись в
+`CHANGELOG.md`.
 
-To make it discoverable from the community plugin lists, publish the repository
-with the `dsh-plugin` GitHub topic.
+Чтобы плагин находили в списках сообщества, публикуйте репозиторий с темой
+`dsh-plugin` на GitHub.
 
-## License
+## Лицензия
 
-MIT — see [LICENSE](LICENSE).
+MIT — см. [LICENSE](LICENSE).
