@@ -1,5 +1,8 @@
 # dsh-web-search-searxng
 
+[![ci](https://github.com/svoemesto/dsh-web-search-searxng/actions/workflows/ci.yml/badge.svg)](https://github.com/svoemesto/dsh-web-search-searxng/actions/workflows/ci.yml)
+**English** | [Русский](README.ru.md)
+
 A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) bundle that
 gives the agent a working `web_search` without a vendor API key. It plugs a
 SearXNG-backed `WebSearchProvider` into the harness web seam (`ctx.web`) and, by
@@ -29,19 +32,21 @@ is started (see [Reuse an existing instance](#reuse-an-existing-instance)).
 The package declares `dsh.bundle`, so installing it also activates it:
 
 ```bash
-# from a directory (local development)
-dsh plugin --profile web add /path/to/dsh-web-search-searxng
-
-# from GitHub
+# from GitHub (the supported channel)
 dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
 
-# from npm, once published
-dsh plugin --profile web add dsh-web-search-searxng
+# from a local checkout (development)
+dsh plugin --profile web add /path/to/dsh-web-search-searxng
 ```
 
 Inside a running harness the same install is `plugin_manager` →
 `install_bundle` with the package directory as `target`. Then ask the agent
 something current: `web_search` answers through your instance.
+
+> The npm name `dsh-web-search-searxng` belongs to an **unrelated** SearXNG
+> plugin (0.5.1), so do not install from npm by that name — use the GitHub spec
+> above. Publishing this package to npm requires a scope (see
+> [Publishing](#publishing)).
 
 **First run is slow, once.** The plugin pulls the image, creates the container,
 and waits for `/healthz` (up to `startupTimeoutMs`, 90 s by default). Until it is
@@ -166,8 +171,12 @@ CI runs the unit suite on Node 22 and 24 for every push
 
 ```bash
 npm pack --dry-run      # the tarball must contain index.js, src/, locale/, icon.svg, patch, LICENSE, README
-npm publish             # or: dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
 ```
+
+The npm name `dsh-web-search-searxng` is already taken by an unrelated package,
+so a registry release needs a scope, e.g. `@you/dsh-web-search-searxng`. Rename
+the package **and** the bundle row's `name:` in `cordis.patch.yml` together, then
+`npm publish --access public`. GitHub installation needs none of this.
 
 Bump `version` and add a `CHANGELOG.md` entry for every published change.
 

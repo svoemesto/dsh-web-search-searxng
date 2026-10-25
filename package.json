@@ -36,6 +36,7 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
+    "README.ru.md",
     "LICENSE",
     "CHANGELOG.md",
     "test/*.mjs"

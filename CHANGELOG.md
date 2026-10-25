@@ -21,3 +21,5 @@ First public version.
   `WEB_PROVIDER_ERROR`; `WEB_ABORTED` for caller cancellation.
 - Loud config validation (every field named), 23-test unit suite with a fake
   Docker runner, and a live Docker smoke test.
+- Russian README (`README.ru.md`) with a language switcher, a CI badge, and an
+  explicit note that the npm name belongs to an unrelated package.
