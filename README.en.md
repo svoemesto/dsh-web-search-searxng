@@ -153,6 +153,10 @@ test/unit.test.mjs    unit suite (fake docker, no network)
 test/docker.smoke.mjs live container: ensure → search → stop → rm
 ```
 
+The plugin's display text in DSH is Russian on purpose: the harness ships only
+`zh`/`en` UI locales, so the Russian text lives in `locale/en.json` (and
+`locale/ru.json`) to be shown; English documentation stays in this file.
+
 ```bash
 node --test test/unit.test.mjs   # config, settings, container lifecycle, mapping, errors
 node test/docker.smoke.mjs       # real container; needs Docker + network, starts dsh-searxng-smoke

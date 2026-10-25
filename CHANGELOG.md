@@ -4,6 +4,13 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.2 — 2026-10-25
+
+- Plugin display text is Russian in DSH: title and description in `locale/en.json`
+  and `locale/ru.json`, and the `package.json` description, are Russian. The
+  harness ships only `zh`/`en` UI locales, so the Russian text has to live in the
+  `en` dictionary to be shown; English documentation stays in `README.en.md`.
+
 ## 2.0.1 — 2026-10-25
 
 Documentation release; no behaviour change.

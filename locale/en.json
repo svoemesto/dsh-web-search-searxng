@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "SearXNG Web Search",
-    "description": "Routes web_search through a SearXNG instance: the plugin runs its own container on a free local port (or reuses an instance you point it at), with no vendor API key and no per-search cost."
+    "title": "Поиск через SearXNG",
+    "description": "Поиск в интернете через собственный SearXNG: плагин сам поднимает контейнер, без ключей вендора и оплаты за запросы."
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "dsh-web-search-searxng",
-  "version": "2.0.1",
-  "description": "SearXNG-backed web search for the DeepSeek Harness: brings up its own SearXNG container (or reuses yours) and routes the model-facing web_search tool through it — no vendor API key.",
+  "version": "2.0.2",
+  "description": "Поиск в интернете через SearXNG для DeepSeek Harness: плагин сам поднимает контейнер (или использует ваш инстанс), без ключей вендора и оплаты за запросы.",
   "type": "module",
   "license": "MIT",
   "repository": {

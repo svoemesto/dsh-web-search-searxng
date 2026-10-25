@@ -154,6 +154,10 @@ test/unit.test.mjs    юнит-набор (фейковый docker, без се�
 test/docker.smoke.mjs живой контейнер: ensure → search → stop → rm
 ```
 
+Текст карточки плагина в DSH — по-русски: харнесс поставляет только локали
+`zh`/`en`, поэтому русский текст лежит в `locale/en.json` (и в `locale/ru.json`),
+чтобы отображаться в интерфейсе; английская документация — в `README.en.md`.
+
 ```bash
 node --test test/unit.test.mjs   # конфиг, настройки, жизненный цикл контейнера, маппинг, ошибки
 node test/docker.smoke.mjs       # настоящий контейнер; нужны Docker и сеть, поднимает dsh-searxng-smoke
