@@ -9,12 +9,37 @@ SearXNG-backed `WebSearchProvider` into the harness web seam (`ctx.web`) and, by
 default, **brings up its own SearXNG container** — so installing the bundle is
 the whole setup.
 
-- Plain ESM, no dependencies, no build step.
-- Own container (`searxng/searxng` image) on a free loopback port, generated
-  settings, health wait, stop on unload — or point it at an instance you
-  already run with one config field.
-- No key, no per-search cost, no third-party API in the loop.
-- Provider id `searxng`; the model-facing `web_search` tool is the stock one.
+## How it works, and why not a bare adapter
+
+A bare SearXNG adapter is about thirty lines: call `{base}/search?format=json` and
+return `results[]`. It assumes SearXNG is already running, JSON is enabled there,
+the port is free, the image is current, and the container stays alive. And it
+cannot tell "nothing was found" from "the engines inside failed": both arrive as
+HTTP 200 with an empty list.
+
+This plugin builds the instance and the reliability into the package:
+
+1. **Install is the setup.** The plugin pulls `searxng/searxng`, takes the first
+   free loopback port, generates `settings.yml` (JSON on, limiter off, a secret
+   created once), waits for `/healthz`, and stops the container on unload. There
+   is no separate "start SearXNG first" step; if you already run an instance, one
+   `baseURL` field reuses it and nothing is started.
+2. **Dead engines are an error, not an empty answer.** SearXNG reports
+   `unresponsive_engines`; the plugin makes a second pass (over `fallbackEngines`
+   or without the narrowing filters) and only then names the engines that failed.
+3. **Transient failures are survived.** Network errors, the per-attempt timeout,
+   429/5xx are retried; a caller abort never is; worst-case latency is
+   `(retries + 1) × timeoutMs`.
+4. **Repeating a search costs nothing.** A 60-second TTL cache: agents re-issue
+   the same query, and the second answer comes from memory.
+5. **Results are citeable.** Only http(s) URLs, snippets capped at 800 characters,
+   `publishedAt`, and the engine's own answer (`answers`) as `content` — no
+   invented prose.
+
+What it does not do: no vendor API, no key, no per-search cost, no generated
+summaries — `content` comes from the engine. The provider registers as `searxng`,
+the stock `web_search` tool is unchanged, and the package is plain ESM with no
+dependencies or build step.
 
 ## Requirements
 

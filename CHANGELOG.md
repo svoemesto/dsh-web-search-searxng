@@ -16,6 +16,9 @@ All notable changes to this package are recorded here. The format follows
   process-local, successes only.
 - 31 unit tests: 8 new ones cover cache hits, expiry, eviction, both retry
   shapes, 5xx vs 4xx, `retries=0`, and that a caller abort is never retried.
+- Both READMEs now open with how the plugin works and what a bare SearXNG
+  adapter lacks (instance lifecycle, engine-failure semantics, retries, cache,
+  citeable results).
 
 ## 2.0.2 — 2026-10-25
 
