@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SearXNG web search">
+  <defs>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <!-- magnifier body -->
+  <circle cx="27" cy="27" r="17" fill="none" stroke="url(#ring)" stroke-width="4"/>
+  <line x1="39.5" y1="39.5" x2="53" y2="53" stroke="url(#ring)" stroke-width="5" stroke-linecap="round"/>
+  <!-- aggregated sources: three nodes wired to one centre -->
+  <g stroke="#94a3b8" stroke-width="2" stroke-linecap="round">
+    <line x1="27" y1="27" x2="19" y2="20"/>
+    <line x1="27" y1="27" x2="35" y2="20"/>
+    <line x1="27" y1="27" x2="27" y2="36"/>
+  </g>
+  <g fill="#14b8a6">
+    <circle cx="27" cy="27" r="3.2"/>
+    <circle cx="19" cy="20" r="2.6"/>
+    <circle cx="35" cy="20" r="2.6"/>
+    <circle cx="27" cy="36" r="2.6"/>
+  </g>
+</svg>

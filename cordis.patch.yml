@@ -1,0 +1,28 @@
+# Bundle layer: SearXNG as this profile's web search provider.
+#
+# Two rows, deliberately:
+#   1. the provider. With no `baseURL` it brings up its own SearXNG container
+#      (`searxng/searxng` image) on the first free loopback port starting at
+#      `port`, generates `~/.dsh/searxng/settings.yml` (JSON API on, limiter
+#      off), waits for `/healthz`, and stops the container when the plugin
+#      unloads. Set `baseURL: http://host:port` instead to reuse an instance you
+#      already run.
+#   2. an id-targeted override of the `web` row's config. A patch replaces
+#      `config` wholesale, so `fetchProvider` is restated exactly as the base
+#      bundle composes it (`http`) — otherwise pinning search would also blank
+#      the fetch provider and `web_fetch` would lose its backend.
+#
+# A Settings > Plugins > Web search save writes an override into the `web`
+# settings namespace, which outranks this composed value. That is the owner's
+# explicit choice when it happens; this file is the default.
+- insert:
+    - id: web-search-searxng
+      name: dsh-web-search-searxng
+      config:
+        # First port to try; a busy port moves the container up the range.
+        port: 8888
+
+- id: web
+  config:
+    searchProvider: searxng
+    fetchProvider: http

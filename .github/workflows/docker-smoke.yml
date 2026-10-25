@@ -1,0 +1,22 @@
+name: docker-smoke
+
+# Manual only: pulls the SearXNG image (~400 MB), starts a real container, runs
+# one live search, then removes it. Too heavy and too network-dependent for
+# every push, but it is the check that proves the container path end to end.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: docker version
+      - run: node test/docker.smoke.mjs

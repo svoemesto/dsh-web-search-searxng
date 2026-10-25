@@ -1,0 +1,44 @@
+{
+  "name": "dsh-web-search-searxng",
+  "version": "2.0.0",
+  "description": "SearXNG-backed web search for the DeepSeek Harness: brings up its own SearXNG container (or reuses yours) and routes the model-facing web_search tool through it — no vendor API key.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "searxng",
+    "web-search",
+    "metasearch"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "test/*.mjs"
+  ],
+  "scripts": {
+    "test": "node --test test/unit.test.mjs",
+    "verify": "node test/docker.smoke.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
