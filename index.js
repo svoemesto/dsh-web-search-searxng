@@ -19,7 +19,10 @@ import { SearxngSearchProvider } from './src/provider.js'
 export { resolveConfig, DEFAULTS } from './src/config.js'
 export { CONTAINER_LABEL, SearxngContainer, dockerAvailable, findFreePort, isPortFree, waitForHealth } from './src/container.js'
 export { ensureSettingsFile, renderSettings } from './src/settings.js'
-export { mapAnswer, mapResult, mapResponse, PROVIDER_ID, SearxngSearchProvider } from './src/provider.js'
+export { TtlCache } from './src/cache.js'
+export {
+  attemptPlan, describeUnresponsive, mapAnswer, mapResult, mapResponse, PROVIDER_ID, SearxngSearchProvider, webError,
+} from './src/provider.js'
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'web-search-searxng'

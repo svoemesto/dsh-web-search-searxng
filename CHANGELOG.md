@@ -4,6 +4,19 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.1.0 — 2026-10-25
+
+- Retries for transient failures: network errors, per-attempt timeouts,
+  HTTP 429/5xx, and — from the Karaoke lyrics-search experience — HTTP 200 with no
+  results and a non-empty `unresponsive_engines` list. The retry pass restricts
+  to `fallbackEngines` when configured, otherwise it drops `language`,
+  `categories`, and `time_range`. New config: `retries` (1), `retryDelayMs` (300),
+  `fallbackEngines` ([]).
+- TTL cache for identical searches (`cacheTtlMs` 60 s, `cacheMaxEntries` 200),
+  process-local, successes only.
+- 31 unit tests: 8 new ones cover cache hits, expiry, eviction, both retry
+  shapes, 5xx vs 4xx, `retries=0`, and that a caller abort is never retried.
+
 ## 2.0.2 — 2026-10-25
 
 - Plugin display text is Russian in DSH: title and description in `locale/en.json`

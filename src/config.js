@@ -28,6 +28,16 @@ export const DEFAULTS = {
   timeoutMs: 20_000,
   /** How long to wait for the container to answer `/healthz` (ms). */
   startupTimeoutMs: 90_000,
+  /** Extra attempts after the first one when an attempt is retryable. */
+  retries: 1,
+  /** Pause between attempts (ms). */
+  retryDelayMs: 300,
+  /** Engines the retry pass restricts itself to; empty = retry without filters. */
+  fallbackEngines: [],
+  /** Lifetime of a cached search result (ms); 0 disables the cache. */
+  cacheTtlMs: 60_000,
+  /** Maximum cached searches before the oldest is dropped. */
+  cacheMaxEntries: 200,
 }
 
 const CONTAINER_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/
@@ -121,6 +131,31 @@ export function resolveConfig(config, options = {}) {
     throw new Error('web-search-searxng: timeRange must be day, week, month, or year when set')
   }
 
+  const retries = raw.retries ?? DEFAULTS.retries
+  if (!Number.isInteger(retries) || retries < 0 || retries > 5) {
+    throw new Error('web-search-searxng: retries must be an integer from 0 to 5')
+  }
+
+  const retryDelayMs = raw.retryDelayMs ?? DEFAULTS.retryDelayMs
+  if (!Number.isInteger(retryDelayMs) || retryDelayMs < 0 || retryDelayMs > 10_000) {
+    throw new Error('web-search-searxng: retryDelayMs must be an integer from 0 to 10000')
+  }
+
+  const fallbackEngines = raw.fallbackEngines ?? DEFAULTS.fallbackEngines
+  if (!Array.isArray(fallbackEngines) || fallbackEngines.some(engine => typeof engine !== 'string' || engine.trim().length === 0)) {
+    throw new Error('web-search-searxng: fallbackEngines must be an array of non-empty engine names')
+  }
+
+  const cacheTtlMs = raw.cacheTtlMs ?? DEFAULTS.cacheTtlMs
+  if (!Number.isInteger(cacheTtlMs) || cacheTtlMs < 0) {
+    throw new Error('web-search-searxng: cacheTtlMs must be a non-negative integer')
+  }
+
+  const cacheMaxEntries = raw.cacheMaxEntries ?? DEFAULTS.cacheMaxEntries
+  if (!Number.isInteger(cacheMaxEntries) || cacheMaxEntries < 1) {
+    throw new Error('web-search-searxng: cacheMaxEntries must be a positive integer')
+  }
+
   return Object.freeze({
     mode: external === undefined ? 'container' : 'external',
     ...external !== undefined ? { baseURL: external } : {},
@@ -131,6 +166,11 @@ export function resolveConfig(config, options = {}) {
     dataDir,
     timeoutMs,
     startupTimeoutMs,
+    retries,
+    retryDelayMs,
+    fallbackEngines: Object.freeze([...fallbackEngines]),
+    cacheTtlMs,
+    cacheMaxEntries,
     ...optionalString('language', raw.language) !== undefined ? { language: optionalString('language', raw.language) } : {},
     ...optionalString('categories', raw.categories) !== undefined ? { categories: optionalString('categories', raw.categories) } : {},
     ...safesearch !== undefined ? { safesearch } : {},

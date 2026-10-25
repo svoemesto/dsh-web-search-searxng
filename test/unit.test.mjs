@@ -325,3 +325,173 @@ test('apply: external mode registers the provider and releases it on dispose', a
   await disposers[0]()
   assert.equal(disposed, true)
 })
+
+// ── retries and cache (2.1.0) ────────────────────────────────────────────────
+
+/** Stub the platform fetch, recording every request. */
+function stubFetch(handler) {
+  const original = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url) => {
+    calls.push(String(url))
+    return handler(url, calls.length)
+  }
+  return { calls, restore: () => { globalThis.fetch = original } }
+}
+
+/** A successful SearXNG JSON response. */
+const okBody = body => ({ ok: true, status: 200, json: async () => body })
+const withSource = url => okBody({ results: [{ url, title: 't', content: 's' }] })
+
+test('cache: an identical search within the TTL makes no second request', async () => {
+  const stub = stubFetch(async () => withSource('https://a.example/1'))
+  try {
+    const provider = new SearxngSearchProvider({ resolveBaseURL: async () => 'http://127.0.0.1:8892', timeoutMs: 5_000 })
+    await provider.search({ query: 'q', maxResults: 5 })
+    await provider.search({ query: 'q', maxResults: 5 })
+    assert.equal(stub.calls.length, 1, 'second identical search must hit the cache')
+    // A different bound is a different logical search.
+    await provider.search({ query: 'q', maxResults: 3 })
+    assert.equal(stub.calls.length, 2)
+  } finally {
+    stub.restore()
+  }
+})
+
+test('cache: entries expire after cacheTtlMs', async () => {
+  const stub = stubFetch(async () => withSource('https://a.example/1'))
+  let clock = 1_000
+  try {
+    const provider = new SearxngSearchProvider({
+      resolveBaseURL: async () => 'http://127.0.0.1:8892',
+      timeoutMs: 5_000,
+      cacheTtlMs: 100,
+      now: () => clock,
+    })
+    await provider.search({ query: 'q' })
+    clock += 101
+    await provider.search({ query: 'q' })
+    assert.equal(stub.calls.length, 2, 'an expired entry must be fetched again')
+  } finally {
+    stub.restore()
+  }
+})
+
+test('cache: the oldest entry is dropped at the capacity cap', async () => {
+  const stub = stubFetch(async () => withSource('https://a.example/1'))
+  try {
+    const provider = new SearxngSearchProvider({
+      resolveBaseURL: async () => 'http://127.0.0.1:8892',
+      timeoutMs: 5_000,
+      cacheMaxEntries: 1,
+    })
+    await provider.search({ query: 'one' })
+    await provider.search({ query: 'two' })
+    await provider.search({ query: 'one' })
+    assert.equal(stub.calls.length, 3, 'the evicted query is fetched again')
+    assert.equal(provider.cache.size, 1)
+  } finally {
+    stub.restore()
+  }
+})
+
+test('retry: an empty result caused by dead engines is retried without filters', async () => {
+  const stub = stubFetch(async (url, call) => call === 1
+    ? okBody({ results: [], unresponsive_engines: [['google', 'access denied']] })
+    : withSource('https://b.example/2'))
+  const sleeps = []
+  try {
+    const provider = new SearxngSearchProvider({
+      resolveBaseURL: async () => 'http://127.0.0.1:8892',
+      timeoutMs: 5_000,
+      language: 'ru',
+      categories: 'general',
+      timeRange: 'week',
+      retryDelayMs: 50,
+      sleep: async ms => { sleeps.push(ms) },
+    })
+    const result = await provider.search({ query: 'q' })
+    assert.equal(stub.calls.length, 2)
+    const first = new URL(stub.calls[0])
+    const second = new URL(stub.calls[1])
+    assert.equal(first.searchParams.get('language'), 'ru')
+    assert.equal(first.searchParams.get('time_range'), 'week')
+    assert.equal(second.searchParams.get('language'), null)
+    assert.equal(second.searchParams.get('categories'), null)
+    assert.equal(second.searchParams.get('time_range'), null)
+    assert.deepEqual(sleeps, [50])
+    assert.equal(result.sources[0].url, 'https://b.example/2')
+  } finally {
+    stub.restore()
+  }
+})
+
+test('retry: fallbackEngines win over dropping filters', async () => {
+  const stub = stubFetch(async (url, call) => call === 1
+    ? okBody({ results: [], unresponsive_engines: [['google', 'access denied']] })
+    : withSource('https://b.example/2'))
+  try {
+    const provider = new SearxngSearchProvider({
+      resolveBaseURL: async () => 'http://127.0.0.1:8892',
+      timeoutMs: 5_000,
+      language: 'ru',
+      fallbackEngines: ['bing', 'brave'],
+      sleep: async () => {},
+    })
+    await provider.search({ query: 'q' })
+    const second = new URL(stub.calls[1])
+    assert.equal(second.searchParams.get('engines'), 'bing,brave')
+    assert.equal(second.searchParams.get('language'), 'ru')
+  } finally {
+    stub.restore()
+  }
+})
+
+test('retry: retries=0 fails after a single attempt', async () => {
+  const stub = stubFetch(async () => okBody({ results: [], unresponsive_engines: [['google', 'access denied']] }))
+  try {
+    const provider = new SearxngSearchProvider({
+      resolveBaseURL: async () => 'http://127.0.0.1:8892',
+      timeoutMs: 5_000,
+      retries: 0,
+    })
+    await assert.rejects(() => provider.search({ query: 'q' }), /google: access denied/)
+    assert.equal(stub.calls.length, 1)
+  } finally {
+    stub.restore()
+  }
+})
+
+test('retry: a 5xx answer is retried, a 4xx answer is not', async () => {
+  const flaky = stubFetch(async (url, call) => call === 1 ? { ok: false, status: 500, json: async () => ({}) } : withSource('https://b.example/2'))
+  try {
+    const provider = new SearxngSearchProvider({ resolveBaseURL: async () => 'http://127.0.0.1:8892', timeoutMs: 5_000, sleep: async () => {} })
+    const result = await provider.search({ query: 'q' })
+    assert.equal(flaky.calls.length, 2)
+    assert.equal(result.sources[0].url, 'https://b.example/2')
+  } finally {
+    flaky.restore()
+  }
+
+  const forbidden = stubFetch(async () => ({ ok: false, status: 403, json: async () => ({}) }))
+  try {
+    const provider = new SearxngSearchProvider({ resolveBaseURL: async () => 'http://127.0.0.1:8892', timeoutMs: 5_000, sleep: async () => {} })
+    await assert.rejects(() => provider.search({ query: 'q' }), /HTTP 403/)
+    assert.equal(forbidden.calls.length, 1, 'a 403 (format disabled) is not transient')
+  } finally {
+    forbidden.restore()
+  }
+})
+
+test('retry: caller cancellation is never retried', async () => {
+  const controller = new AbortController()
+  controller.abort()
+  const stub = stubFetch(async () => { throw Object.assign(new Error('aborted'), { name: 'AbortError' }) })
+  try {
+    const provider = new SearxngSearchProvider({ resolveBaseURL: async () => 'http://127.0.0.1:8892', timeoutMs: 5_000, sleep: async () => {} })
+    await assert.rejects(() => provider.search({ query: 'q' }, controller.signal), error => error.code === 'WEB_ABORTED')
+    assert.equal(stub.calls.length, 1)
+  } finally {
+    stub.restore()
+  }
+})

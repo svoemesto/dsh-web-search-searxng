@@ -81,6 +81,11 @@ Every field is optional; all have working defaults.
 | `timeRange` | (unset) | `day`, `week`, `month`, `year`. |
 | `numResults` | (unset) | Trim only when a caller passes no `maxResults`; the seam owns the real bound. |
 | `apiKey` | (unset) | Sent as `preference[api_key]` for instances behind a key. |
+| `retries` | `1` | Extra attempts after the first when it is retryable (0–5). |
+| `retryDelayMs` | `300` | Pause between attempts. |
+| `fallbackEngines` | `[]` | Engines the retry pass restricts itself to; empty = the retry drops `language`, `categories`, `time_range` instead. |
+| `cacheTtlMs` | `60000` | Lifetime of a cached search result; `0` disables the cache. |
+| `cacheMaxEntries` | `200` | Cached searches before the oldest entry is dropped. |
 
 Invalid values stop activation with a message naming the field — a typo never
 degrades into a silently disabled search.
@@ -119,6 +124,29 @@ already runs SearXNG for something else, or the instance lives on another host.
 
 Failures carry the seam's codes: `WEB_PROVIDER_ERROR` (HTTP error, unparseable
 body, timeout, network, not ready) and `WEB_ABORTED` (caller cancellation).
+
+## Retries and cache
+
+A search attempt is retried when the failure is transient: a network error, the
+per-attempt timeout, HTTP 429/5xx, or — the case the Karaoke lyrics search taught
+us — **HTTP 200 with zero results and a non-empty `unresponsive_engines` list**.
+The retry pass is not the same request:
+
+- with `fallbackEngines` set, it restricts the search to those engines
+  (`engines=bing,brave,…`) and keeps the filters;
+- otherwise it repeats the query **without** `language`, `categories`, and
+  `time_range`, which are the narrowing knobs that can zero out an otherwise
+  answerable query.
+
+Worst-case latency is `(retries + 1) × timeoutMs`; with the defaults that is 40 s,
+inside the tool's 60 s budget. A caller abort is never retried.
+
+Identical searches are cached in process memory: the key covers the query, the
+result bound, `language`, `categories`, `safesearch`, `timeRange`, the fallback
+engine list, and the instance base. Entries live `cacheTtlMs` (60 s by default)
+and the cache holds `cacheMaxEntries` searches. It is per process — no file, no
+cross-session sharing beyond one Harness host — and it caches successes only, so
+a failure never hides a later successful search.
 
 ## Troubleshooting
 
