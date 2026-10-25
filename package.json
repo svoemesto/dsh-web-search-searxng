@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-searxng",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Поиск в интернете через SearXNG для DeepSeek Harness: плагин сам поднимает контейнер (или использует ваш инстанс), без ключей вендора и оплаты за запросы.",
   "type": "module",
   "license": "MIT",

@@ -36,6 +36,17 @@ This plugin builds the instance and the reliability into the package:
    `publishedAt`, and the engine's own answer (`answers`) as `content` — no
    invented prose.
 
+Engines are the sources SearXNG queries in parallel. The generated settings use
+`use_default_settings: true`, so the enabled set is the current version's default:
+in the `general` category that is brave, duckduckgo, google cse, wikipedia and
+wikidata (plus helpers such as currency, dictzone and lingva); google, bing, qwant
+and yandex are present in the config but disabled — they need keys or are
+unreliable, and are enabled in `settings.yml`. The enabled set of your instance:
+
+```bash
+curl -s http://127.0.0.1:8888/config | jq -r '.engines[] | select(.enabled) | .name'
+```
+
 What it does not do: no vendor API, no key, no per-search cost, no generated
 summaries — `content` comes from the engine. The provider registers as `searxng`,
 the stock `web_search` tool is unchanged, and the package is plain ESM with no
@@ -108,7 +119,7 @@ Every field is optional; all have working defaults.
 | `apiKey` | (unset) | Sent as `preference[api_key]` for instances behind a key. |
 | `retries` | `1` | Extra attempts after the first when it is retryable (0–5). |
 | `retryDelayMs` | `300` | Pause between attempts. |
-| `fallbackEngines` | `[]` | Engines the retry pass restricts itself to; empty = the retry drops `language`, `categories`, `time_range` instead. |
+| `fallbackEngines` | `[]` | Engines the retry pass restricts itself to, e.g. `["brave", "duckduckgo", "google cse"]`; empty = the retry drops `language`, `categories`, `time_range` instead. |
 | `cacheTtlMs` | `60000` | Lifetime of a cached search result; `0` disables the cache. |
 | `cacheMaxEntries` | `200` | Cached searches before the oldest entry is dropped. |
 

@@ -4,6 +4,14 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.1.1 — 2026-10-25
+
+- README (both languages) explains what "engines" means: the enabled set of the
+  current SearXNG defaults (brave, duckduckgo, google cse, wikipedia, wikidata in
+  `general`; google, bing, qwant and yandex present but disabled), the `/config`
+  command that lists the enabled engines of a given instance, and a
+  `fallbackEngines` example.
+
 ## 2.1.0 — 2026-10-25
 
 - Retries for transient failures: network errors, per-attempt timeouts,
