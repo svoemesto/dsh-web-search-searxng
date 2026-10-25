@@ -174,7 +174,7 @@ Users install — and pin a version — straight from GitHub:
 
 ```bash
 dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
-dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.0
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.1
 ```
 
 To make it discoverable from the community plugin lists, publish the repository

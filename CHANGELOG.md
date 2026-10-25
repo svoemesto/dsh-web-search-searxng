@@ -4,10 +4,16 @@ All notable changes to this package are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 2.0.1 — 2026-10-25
+
+Documentation release; no behaviour change.
 
 - npm is out of scope: both READMEs describe GitHub as the only installation and
   release channel; the npm-name caveat and the publishing instructions are gone.
+- Russian README is the page GitHub shows (`README.md`), English is `README.en.md`;
+  both carry the language switcher and the CI badge.
+- Releasing documented as version bump → tag → GitHub release, with the pinned
+  `github:…#v<version>` install form.
 
 ## 2.0.0 — 2026-10-25
 
@@ -26,6 +32,5 @@ First public version.
   `WEB_PROVIDER_ERROR`; `WEB_ABORTED` for caller cancellation.
 - Loud config validation (every field named), 23-test unit suite with a fake
   Docker runner, and a live Docker smoke test.
-- Russian README as the default page (`README.md`, English in `README.en.md`) with
-  a language switcher, a CI badge, and an explicit note that the npm name belongs
-  to an unrelated package.
+- Russian README (`README.ru.md`) with a language switcher, a CI badge, and an
+  explicit note that the npm name belongs to an unrelated package.

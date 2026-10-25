@@ -175,7 +175,7 @@ CI гоняет юнит-набор на Node 22 и 24 на каждый push
 
 ```bash
 dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
-dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.0
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng#v2.0.1
 ```
 
 Чтобы плагин находили в списках сообщества, публикуйте репозиторий с темой
