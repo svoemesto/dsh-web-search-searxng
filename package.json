@@ -4,6 +4,14 @@
   "description": "SearXNG-backed web search for the DeepSeek Harness: brings up its own SearXNG container (or reuses yours) and routes the model-facing web_search tool through it — no vendor API key.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/svoemesto/dsh-web-search-searxng.git"
+  },
+  "homepage": "https://github.com/svoemesto/dsh-web-search-searxng#readme",
+  "bugs": {
+    "url": "https://github.com/svoemesto/dsh-web-search-searxng/issues"
+  },
   "keywords": [
     "deepseek-harness",
     "dsh",

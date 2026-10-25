@@ -32,8 +32,10 @@ The package declares `dsh.bundle`, so installing it also activates it:
 # from a directory (local development)
 dsh plugin --profile web add /path/to/dsh-web-search-searxng
 
-# from git or a registry, once published
-dsh plugin --profile web add github:<you>/dsh-web-search-searxng
+# from GitHub
+dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
+
+# from npm, once published
 dsh plugin --profile web add dsh-web-search-searxng
 ```
 
@@ -164,7 +166,7 @@ CI runs the unit suite on Node 22 and 24 for every push
 
 ```bash
 npm pack --dry-run      # the tarball must contain index.js, src/, locale/, icon.svg, patch, LICENSE, README
-npm publish             # or: dsh plugin --profile web add github:<you>/dsh-web-search-searxng
+npm publish             # or: dsh plugin --profile web add github:svoemesto/dsh-web-search-searxng
 ```
 
 Bump `version` and add a `CHANGELOG.md` entry for every published change.
