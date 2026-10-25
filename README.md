@@ -169,6 +169,9 @@ npm publish             # or: dsh plugin --profile web add github:<you>/dsh-web-
 
 Bump `version` and add a `CHANGELOG.md` entry for every published change.
 
+To make it discoverable from the community plugin lists, publish the repository
+with the `dsh-plugin` GitHub topic.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
